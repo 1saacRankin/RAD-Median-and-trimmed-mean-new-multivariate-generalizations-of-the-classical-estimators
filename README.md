@@ -6,6 +6,6 @@ Many statistical concepts are defined in the one-dimensional setting. It is not 
 
 Here we compute the RAD-Median:
 <p align="center">
-  <img src="[https://github.com/yourusername/yourrepository/raw/main/image1.png](https://github.com/1saacRankin/RAD-Median-and-trimmed-mean-new-multivariate-generalizations-of-the-classical-estimators/raw/main/example_n10.png)" alt="Image 1" width="45%" />
-  <img src="[https://github.com/yourusername/yourrepository/raw/main/image2.png](https://github.com/1saacRankin/RAD-Median-and-trimmed-mean-new-multivariate-generalizations-of-the-classical-estimators/raw/main/example_n11.png)" alt="Image 2" width="45%" />
+  <img src="https://github.com/1saacRankin/RAD-Median-and-trimmed-mean-new-multivariate-generalizations-of-the-classical-estimators/raw/main/example_n10.png" alt="Result 1" width="45%" />
+  <img src="https://github.com/1saacRankin/RAD-Median-and-trimmed-mean-new-multivariate-generalizations-of-the-classical-estimators/raw/main/example_n11.png" alt="Result 2" width="45%" />
 </p>

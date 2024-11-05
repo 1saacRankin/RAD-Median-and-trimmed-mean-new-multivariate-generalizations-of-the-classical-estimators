@@ -212,6 +212,7 @@ plot_data$Point <- rownames(plot_data)  # Add point names for labels
 
 TRIMMEDmean(X)
 ```
+
 Plot the dataset and RAD-Median
 ```{r ex_even}
 # Compute the RAD-Median
@@ -269,7 +270,7 @@ plot_data$Point <- rownames(plot_data)  # Add point names for labels
 ```
 
 Compute the RAD-Median
-```{r oulier_RAD}
+```{r outlier_RAD}
 TRIMMEDmean(X)
 ```
 
@@ -309,7 +310,7 @@ suppressWarnings({
 ```
 
 Compute the Z80-Mean
-```{r oulier_Z80}
+```{r outlier_Z80}
 TRIMMEDmean(X, RAD_Median = FALSE, TRIM_percentage = 80)
 ```
 

@@ -1,7 +1,7 @@
 ---
-title: "RAD-Median and Trimmed Mean"
+title: "RAD-Median and Zt-Mean"
 author: "Isaac Rankin"
-date: "2024-11-02"
+date: "2024"
 output: pdf_document
 ---
 
@@ -16,31 +16,34 @@ library(ggplot2)
 # Function to Compute the RAD-Median and Trimmed Mean
 
 ```{r function}
-TRIMMEDmean = function(X, TRIM_Remain = 1, distance_type = "euclidean") { 
+TRIMMEDmean = function(X, RAD_Median = TRUE, TRIM_percentage = 80) {
+  # Set RAD_Median = TRUE to compute the RAD-Median
+  # To compute the Zt-Mean, set RAD_Median = FALSE and choose the percentage of points to trim using TRIM_percentage
+  
   # X is a matrix of point coordinates
-  # TRIM_Remain is the minimum number of points to be kept 
-  # p must be greater or equal to 2 
-
   n = nrow(X) # number of observations 
-  p = ncol(X) # dimension of data 
+  p = ncol(X) # dimension of data and must be greater or equal to 2 
   rownames(X) = paste0(rep("x", n), 1:n) # xi is observation 1 
   colnames(X) = paste0(rep("c", p), 1:p) # ci is coordinate i 
-
-  # Check for valid distance type
-  valid_distance_types = c("euclidean", "manhattan", "maximum", "canberra", "binary", "minkowski")
-  if (!(distance_type %in% valid_distance_types)) {
-    message(paste("Invalid distance type selected. Supported types are:", 
-                  paste(valid_distance_types, collapse = ", ")))
-    return(NULL)  # Return NULL if the distance type is invalid
+  
+  # If RAD_Median = TRUE, use TRIM_Remain = 1
+  if (RAD_Median == TRUE) {
+    TRIM_Remain = 1
   }
-
+  
+  # If RAD_Median = FALSE, use TRIM_proportion and n to find TRIM_Remain
+  if (RAD_Median == FALSE) {
+    TRIM_Remain = min(n, max(1, round(n * (1 - TRIM_percentage/100))))
+  }
+  
   # If all points are kept, return the regular mean 
-  if (TRIM_Remain == n) { 
+  if (TRIM_Remain == n) {
+    print("The mean of all points is:")
     return(colMeans(X)) 
   } 
 
-  # Matrix of pairwise distances using the specified distance type
-  D = as.matrix(dist(X, method = distance_type))
+  # Matrix of pairwise distances
+  D = as.matrix(dist(X, method = "euclidean"))
   colnames(D) = paste0(rep("x", n), 1:n) 
   rownames(D) = paste0(rep("x", n), 1:n) 
 
@@ -54,7 +57,7 @@ TRIMMEDmean = function(X, TRIM_Remain = 1, distance_type = "euclidean") {
     Prev = D 
     prev_points = ncol(Prev) 
     
-    #### Handle the single point median case separately 
+    #### Handle the single point RAD-Median case separately 
     if (points == 3 & TRIM_Remain == 1) { 
       three_points = rownames(D) 
       farthest = which(D == max(D), arr.ind = TRUE) 
@@ -91,17 +94,23 @@ TRIMMEDmean = function(X, TRIM_Remain = 1, distance_type = "euclidean") {
     points_in_mean[a] = which(rownames(X) == POINTS_to_use[a]) 
   } 
 
+  
   mean_of_points = colMeans(X[points_in_mean,]) 
-  print("The points used to compute the Trimmed-mean are:") 
-  print(X[points_in_mean,]) 
-  print("The Trimmed mean is:") 
+  print("The points used are:") 
+  print(X[points_in_mean,])
+  
+  if (RAD_Median == TRUE){
+    print("The RAD-Median is:")
+  } else{
+    cat(paste("The Z", TRIM_percentage, "-Mean is:\n", sep = ""))
+  }
   return(mean_of_points) 
 }
 ```
 
 
 
-# Examples
+# High-dimensional examples
 
 Create an example dataset with 101 5-dimensional observations
 ```{r dataset_examples}
@@ -111,34 +120,25 @@ p = 5 # p is the number of coordinates of each observation
 Sample_data = matrix(data = rnorm(n*p, mean = 0, sd = 10), nrow = n, ncol = p)
 ```
 
-
-Compute the RAD-Median using Euclidean distance
+Compute the RAD-Median
 ```{r ex1}
-TRIMMEDmean(Sample_data, TRIM_Remain = 1, distance_type = "euclidean")
+TRIMMEDmean(Sample_data)
 ```
 
-Compute the Trimmed-Mean using Euclidean distance
-
+Compute the Z90-Mean
 ```{r ex2}
-TRIMMEDmean(Sample_data, TRIM_Remain = 4, distance_type = "euclidean")
-```
-Compute the RAD-Median using Manhattan distance
-```{r ex3}
-TRIMMEDmean(Sample_data, TRIM_Remain = 1, distance_type = "manhattan")
+TRIMMEDmean(Sample_data, RAD_Median = FALSE, TRIM_percentage = 90)
 ```
 
-Demonstrate the supported distances
-```{r ex4}
-TRIMMEDmean(Sample_data, TRIM_Remain = 1, distance_type = "?")
-```
 
 
 # Example for 2-dimensional data, n odd
 
+Compute the RAD-Median
 ```{r dataset_odd}
 # Create the dataset
-set.seed(123456) 
-n = 5 # n is the number of observations
+set.seed(12345) 
+n = 35 # n is the number of observations
 X <- matrix(data = runif(n = 2*n, min = 0, max = 10), nrow = n, ncol = 2, byrow = TRUE)
 
 # Set row names as x1, x2, ...
@@ -150,18 +150,22 @@ colnames(X) <- paste0("c", 1:ncol(X))
 # Prepare data for plotting
 plot_data <- as.data.frame(X)
 plot_data$Point <- rownames(plot_data)  # Add point names for labels
+
+TRIMMEDmean(X)
 ```
 
+Plot the dataset and RAD-Median
 ```{r ex_odd}
-# Compute the TRIMMEDmean
-trimmed_mean_result <- TRIMMEDmean(X, TRIM_Remain = 1, distance_type = "euclidean")
+# Compute the RAD-Median
+trimmed_mean_result <- TRIMMEDmean(X)
+print(trimmed_mean_result)
 
-# Plot the points and TRIMMEDmean
+# Plot the points and RAD-Median
 suppressWarnings({
   p <- ggplot(plot_data, aes(x = c1, y = c2)) +
     geom_point(color = "grey", size = 3) +  # Original points
     geom_point(aes(x = trimmed_mean_result[1], y = trimmed_mean_result[2]), 
-               color = "red", shape = 5, size = 4, stroke = 1) +  # Trimmed mean point
+               color = "red", shape = 5, size = 4, stroke = 1) +  
     xlab("Coordinate 1") +
     ylab("Coordinate 2") +
     theme_minimal(base_size = 15) +
@@ -175,7 +179,7 @@ suppressWarnings({
       panel.grid.minor = element_blank(),
       panel.border = element_blank()
     ) +
-    geom_text(aes(label = Point), hjust = 1.5, vjust = 0, size = 4) +
+    #geom_text(aes(label = Point), hjust = 1.5, vjust = 0, size = 4) +
     coord_fixed(ratio = 1) +  # Fixed aspect ratio
     scale_x_continuous(expand = c(0, 0),
                        limits = c(0, 11)) +  # Set x-axis to start from 0
@@ -183,16 +187,75 @@ suppressWarnings({
                        limits = c(0, 11))   # Set y-axis to start from 0
     print(p)
 })
-
 ```
+
+
 
 # Example for 2-dimensional data, n even
 
+Compute the RAD-Median
 ```{r dataset_even}
 # Create the dataset
 set.seed(2024) 
-n = 10 # n is the number of observations
+n = 40 # n is the number of observations
 X <- matrix(data = runif(n = 2*n, min = 0, max = 10), nrow = n, ncol = 2, byrow = TRUE)
+
+# Set row names as x1, x2, ...
+rownames(X) <- paste0("x", 1:nrow(X))
+
+# Set column names as c1, c2, ...
+colnames(X) <- paste0("c", 1:ncol(X))
+
+# Prepare data for plotting
+plot_data <- as.data.frame(X)
+plot_data$Point <- rownames(plot_data)  # Add point names for labels
+
+TRIMMEDmean(X)
+```
+Plot the dataset and RAD-Median
+```{r ex_even}
+# Compute the RAD-Median
+trimmed_mean_result <- TRIMMEDmean(X)
+print(trimmed_mean_result)
+
+# Plot the points and RAD-Median
+suppressWarnings({
+  p <- ggplot(plot_data, aes(x = c1, y = c2)) +
+    geom_point(color = "grey", size = 3) +  # Original points
+    geom_point(aes(x = trimmed_mean_result[1], y = trimmed_mean_result[2]), 
+               color = "red", shape = 5, size = 4, stroke = 1) +  
+    xlab("Coordinate 1") +
+    ylab("Coordinate 2") +
+    theme_minimal(base_size = 15) +
+    theme(
+      axis.title.x = element_text(size = 14, face = "bold"),  # Larger x-axis title
+      axis.title.y = element_text(size = 14, face = "bold"),  # Larger y-axis title
+      axis.text.x = element_text(size = 12),  # Larger x-axis text
+      axis.text.y = element_text(size = 12),  # Larger y-axis text
+      axis.line = element_line(colour = "black"),  # Add axis lines
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      panel.border = element_blank()
+    ) +
+    #geom_text(aes(label = Point), hjust = 1.5, vjust = 0, size = 4) +
+    coord_fixed(ratio = 1) +  # Fixed aspect ratio
+    scale_x_continuous(expand = c(0, 0),
+                       limits = c(0, 11)) +  # Set x-axis to start from 0
+    scale_y_continuous(expand = c(0, 0),
+                       limits = c(0, 11))   # Set y-axis to start from 0
+    print(p)
+})
+```
+
+
+
+# Example for 2-dimensional data with outliers
+
+Make a dataset with outliers
+```{r dataset_outliers}
+# Create the dataset
+set.seed(2024) 
+X <- matrix(data = c(rnorm(n = 30, mean = 25, sd = 5), runif(n = 160, min = 100, max = 150)), ncol = 2, byrow = TRUE)
 
 # Set row names as x1, x2, ...
 rownames(X) <- paste0("x", 1:nrow(X))
@@ -205,17 +268,23 @@ plot_data <- as.data.frame(X)
 plot_data$Point <- rownames(plot_data)  # Add point names for labels
 ```
 
+Compute the RAD-Median
+```{r oulier_RAD}
+TRIMMEDmean(X)
+```
 
-```{r ex_even}
-# Compute the TRIMMEDmean
-trimmed_mean_result <- TRIMMEDmean(X, TRIM_Remain = 1, distance_type = "euclidean")
+Plot the RAD_Median
+```{r ex_outliers_RAD}
+# Compute the RAD_Median
+trimmed_mean_result <- TRIMMEDmean(X)
+print(trimmed_mean_result)
 
-# Plot the points and TRIMMEDmean
+# Plot the points and RAD_Median
 suppressWarnings({
   p <- ggplot(plot_data, aes(x = c1, y = c2)) +
     geom_point(color = "grey", size = 3) +  # Original points
     geom_point(aes(x = trimmed_mean_result[1], y = trimmed_mean_result[2]), 
-               color = "red", shape = 5, size = 4, stroke = 1) +  # Trimmed mean point
+               color = "red", shape = 5, size = 4, stroke = 1) +  
     xlab("Coordinate 1") +
     ylab("Coordinate 2") +
     theme_minimal(base_size = 15) +
@@ -229,74 +298,33 @@ suppressWarnings({
       panel.grid.minor = element_blank(),
       panel.border = element_blank()
     ) +
-    geom_text(aes(label = Point), hjust = 1.5, vjust = 0, size = 4) +
+    #geom_text(aes(label = Point), hjust = 1.5, vjust = 0, size = 4) +
     coord_fixed(ratio = 1) +  # Fixed aspect ratio
     scale_x_continuous(expand = c(0, 0),
-                       limits = c(0, 11)) +  # Set x-axis to start from 0
+                       limits = c(0, 160)) +  # Set x-axis to start from 0
     scale_y_continuous(expand = c(0, 0),
-                       limits = c(0, 11))   # Set y-axis to start from 0
+                       limits = c(0, 160))   # Set y-axis to start from 0
     print(p)
 })
-
 ```
 
-# Manhattan distance is not rotationally invariant
-```{r dataset_triangle}
-# Define the data matrix
-triangle_data <- matrix(data = c(0, 0, 
-                                  0, 1, 
-                                  sqrt(3), 0), 
-                         nrow = 3, ncol = 2, byrow = TRUE)
-
-# Set row names as x1, x2, ...
-rownames(triangle_data) <- paste0("x", 1:nrow(triangle_data))
-
-# Set column names as c1, c2, ...
-colnames(triangle_data) <- paste0("c", 1:ncol(triangle_data))
-
-# Define the rotation angle (pi/6)
-theta <- pi / 6
-
-# Define the rotation matrix
-rotation_matrix <- matrix(c(cos(theta), -sin(theta), 
-                             sin(theta), cos(theta)), 
-                          nrow = 2, byrow = TRUE)
-
-# Rotate each point by applying the rotation matrix
-rotated_data <- triangle_data %*% t(rotation_matrix)
-
-# Set column names as c1, c2, ...
-colnames(rotated_data) <- paste0("c", 1:ncol(rotated_data))
-
-# Prepare data for plotting
-plot_data_triangle <- as.data.frame(triangle_data)
-plot_data_triangle$Point <- rownames(plot_data_triangle)  # Add point names for labels
-
-plot_data_rotated <- as.data.frame(rotated_data)
-plot_data_rotated$Point <- rownames(plot_data_rotated)  # Add point names for labels
+Compute the Z80-Mean
+```{r oulier_Z80}
+TRIMMEDmean(X, RAD_Median = FALSE, TRIM_percentage = 80)
 ```
 
-RAD-Median for original data
-```{r original_RAD}
-TRIMMEDmean(triangle_data, TRIM_Remain = 1, distance_type = "manhattan")
-```
+Plot the Z80-Mean
+```{r ex_outliers_Z80}
+# Compute the Z80-Mean
+trimmed_mean_result <- TRIMMEDmean(X, RAD_Median = FALSE, TRIM_percentage = 80)
+print(trimmed_mean_result)
 
-RAD-Median for rotated data
-```{r rotated_RAD}
-TRIMMEDmean(rotated_data, TRIM_Remain = 1, distance_type = "manhattan")
-```
-
-Plot of RAD-Median for original data
-```{r plot_original}
-# Compute the TRIMMEDmean
-trimmed_mean_result <- TRIMMEDmean(triangle_data, TRIM_Remain = 1, distance_type = "manhattan")
-
-# Plot the points and TRIMMEDmean
+# Plot the points and Z80-Mean
 suppressWarnings({
-  p <- ggplot(plot_data_triangle, aes(x = c1, y = c2)) +
+  p <- ggplot(plot_data, aes(x = c1, y = c2)) +
     geom_point(color = "grey", size = 3) +  # Original points
     geom_point(aes(x = trimmed_mean_result[1], y = trimmed_mean_result[2]), 
-               color = "red", shape = 5, size = 4, stroke = 1) +  # Trimmed mean point
+               color = "red", shape = 5, size = 4, stroke = 1) +  
     xlab("Coordinate 1") +
     ylab("Coordinate 2") +
     theme_minimal(base_size = 15) +
@@ -310,51 +338,12 @@ suppressWarnings({
       panel.grid.minor = element_blank(),
       panel.border = element_blank()
     ) +
-    geom_text(aes(label = Point), hjust = 1.5, vjust = 0, size = 4) +
+    #geom_text(aes(label = Point), hjust = 1.5, vjust = 0, size = 4) +
     coord_fixed(ratio = 1) +  # Fixed aspect ratio
     scale_x_continuous(expand = c(0, 0),
-                       limits = c(-2, 2)) +  
+                       limits = c(0, 160)) +  # Set x-axis to start from 0
     scale_y_continuous(expand = c(0, 0),
-                       limits = c(-1, 2))   
+                       limits = c(0, 160))   # Set y-axis to start from 0
     print(p)
 })
-
 ```
-
-Plot of RAD-Median for rotated data
-```{r plot_rotated}
-# Compute the TRIMMEDmean
-trimmed_mean_result <- TRIMMEDmean(rotated_data, TRIM_Remain = 1, distance_type = "manhattan")
-
-# Plot the points and TRIMMEDmean
-suppressWarnings({
-  p <- ggplot(plot_data_rotated, aes(x = c1, y = c2)) +
-    geom_point(color = "grey", size = 3) +  # Original points
-    geom_point(aes(x = trimmed_mean_result[1], y = trimmed_mean_result[2]), 
-               color = "red", shape = 5, size = 4, stroke = 1) +  # Trimmed mean point
-    xlab("Coordinate 1") +
-    ylab("Coordinate 2") +
-    theme_minimal(base_size = 15) +
-    theme(
-      axis.title.x = element_text(size = 14, face = "bold"),  # Larger x-axis title
-      axis.title.y = element_text(size = 14, face = "bold"),  # Larger y-axis title
-      axis.text.x = element_text(size = 12),  # Larger x-axis text
-      axis.text.y = element_text(size = 12),  # Larger y-axis text
-      axis.line = element_line(colour = "black"),  # Add axis lines
-      panel.grid.major = element_blank(),
-      panel.grid.minor = element_blank(),
-      panel.border = element_blank()
-    ) +
-    geom_text(aes(label = Point), hjust = 1.5, vjust = 0, size = 4) +
-    coord_fixed(ratio = 1) +  # Fixed aspect ratio
-    scale_x_continuous(expand = c(0, 0),
-                       limits = c(-2, 2)) +  
-    scale_y_continuous(expand = c(0, 0),
-                       limits = c(-1, 2))   
-    print(p)
-})
-
-```
-
-
-
